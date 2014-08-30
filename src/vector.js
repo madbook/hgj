@@ -21,7 +21,7 @@ Vector = (function() {
   function sum(a, b) {
     return {
       x: a.x + b.x, 
-      a.y + b.y,
+      y: a.y + b.y,
     };
   }
 
@@ -46,7 +46,7 @@ Vector = (function() {
     };
   }
 
-  function norm(a, b) {
+  function normFrom(a, b) {
     return norm(diff(b, a));
   }
 
@@ -90,8 +90,8 @@ Vector = (function() {
 
   function sqtnt(a, s) {
     return {
-      x: a.x / s,
-      y: a.y / s,
+      x: a.x / s || 0,
+      y: a.y / s || 0,
     };
   }
   
@@ -141,6 +141,12 @@ Vector = (function() {
     return mclamp(atan2(a.y, a.x), 0, TAU);
   }
 
+  function set(a, b) {
+    a.x = b.x;
+    a.y = b.y;
+    return a;
+  }
+
   return {
     sum: sum,
     diff: diff,
@@ -154,12 +160,12 @@ Vector = (function() {
     ang: ang,
     sprod: sprod,
     sqtnt: sqtnt,
-    norm: norm,
     neg: neg,
     clone: clone,
     cross: cross,
     cross2: cross2,
     length: length,
     angle: angle,
+    set: set,
   };
 })();
