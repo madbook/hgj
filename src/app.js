@@ -62,13 +62,6 @@ function initEngine(entities, can) {
   main();
 }
 
-function vectorAdd(a, b) {
-  a.x += b.x;
-  a.y += b.y;
-  return a;
-}
-
-
 function Man(x, y) {
   this.position = {x:x, y:y};
   this.movement = {x:0, y:0};
