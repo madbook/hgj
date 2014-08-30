@@ -73,16 +73,19 @@ function Man(x, y) {
   this.momentum = {x:0, y:0};
 }
 
-Man.prototype.height = 45;
+Man.prototype.height = 30;
 Man.prototype.width = 30;
 
 Man.prototype.draw = function(can) {
-  var x = this.position.x + this.width / 2;
-  var y = this.position.y + (this.height * 2 / 3);
+  var x = this.position.x// + this.width / 2;
+  var y = this.position.y// + (this.height * 2 / 3);
+  var a = V.angle(this.direction);
 
   can.translate(x, y)
+     .rotate(a)
      .fillStyle('#222222')
-     .fillRect(0, 0, this.width, this.height)
+     .fillBox(0, 0, this.width, this.height)
+     .rotate(-a)
      .translate(-x, -y);
 }
 
@@ -94,10 +97,8 @@ Man.prototype.applyMovement = function(vec) {
 
 Man.prototype.tick = function() {
   var s = lerp(this.speed, this._speed, 0.3);
-  if (s !== this.speed) {
-    this.speed = s;
-    this.momentum = V.sprod(this.direction, s);
-  }
+  this.speed = s;
+  this.momentum = V.sprod(this.direction, s);
   V.set(this.position, V.sum(this.position, this.momentum));
 }
 
