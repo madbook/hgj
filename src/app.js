@@ -1,5 +1,7 @@
 
 var V = Vector;
+var max = Math.max;
+var min = Math.min;
 
 function main() {
   var app = document.getElementById('app');
@@ -64,7 +66,11 @@ function initEngine(entities, can) {
 
 function Man(x, y) {
   this.position = {x:x, y:y};
-  this.movement = {x:0, y:0};
+  this.direction = {x:0, y:0};
+  this.isMoving = false;
+  this.speed = 0;
+  this._speed = 0;
+  this.momentum = {x:0, y:0};
 }
 
 Man.prototype.height = 45;
@@ -81,13 +87,18 @@ Man.prototype.draw = function(can) {
 }
 
 Man.prototype.applyMovement = function(vec) {
-  this.movement.x = vec.x;
-  this.movement.y = vec.y;
+  V.set(this.direction, vec);
+  this.isMoving = (vec.x !== 0 || vec.y !== 0);
+  this._speed = (this.isMoving ? 5 : 0);
 }
 
 Man.prototype.tick = function() {
-  this.position.x += this.movement.x;
-  this.position.y += this.movement.y;
+  var s = lerp(this.speed, this._speed, 0.3);
+  if (s !== this.speed) {
+    this.speed = s;
+    this.momentum = V.sprod(this.direction, s);
+  }
+  V.set(this.position, V.sum(this.position, this.momentum));
 }
 
 
@@ -119,6 +130,14 @@ function draw(entities, can) {
     entities[i].draw(can);
   }
 }
+
+function lerp(curr, goal, f) {
+  // where 0 < f < 1
+  return goal > curr 
+      ? min(goal, curr + f * (goal - curr))
+      : max(goal, curr - f * (curr - goal));
+}
+
 
 function initKeyboardEvents(keyState, onPress, onRelease) {
   function pressKey(key) {
