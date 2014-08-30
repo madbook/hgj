@@ -1,18 +1,11 @@
 
 function main() {
-  var can = CannedVas.create();
   var app = document.getElementById('app');
-  can.size({
-    width: 900,
-    height: 600,
-  });
-  can.style('width', '450px');
-  can.style('height', '300px');
-  app.appendChild(can.vas);
-
+  var can = getCan(app);
   var man = new Man(50, 50);
   man.draw(can);
 }
+
 
 function Man(x, y) {
   this.x = x;
@@ -30,4 +23,17 @@ Man.prototype.draw = function(can) {
      .fillStyle('#222222')
      .fillRect(0, 0, this.width, this.height)
      .translate(-x, -y);
+}
+
+
+function getCan(app) {
+  // creates a canvas element in the dom, returns it wrapped in cannedvas
+  var can = CannedVas.create();
+  can.size({
+    width: 900,
+    height: 600,
+  });
+  can.style('width', '450px');
+  can.style('height', '300px');
+  app.appendChild(can.vas);
 }
