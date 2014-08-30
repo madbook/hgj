@@ -1,4 +1,6 @@
 
+var V = Vector;
+
 function main() {
   var app = document.getElementById('app');
   var can = getCan(app);
@@ -27,18 +29,18 @@ function main() {
   function getCompositeVector() {
     var vec = {x:0, y:0};
     if (keyState.up) {
-      vectorAdd(vec, keyVectors.up);
+      vec = V.sum(vec, keyVectors.up);
     }
     if (keyState.down) {
-      vectorAdd(vec, keyVectors.down);
+      vec = V.sum(vec, keyVectors.down);
     }
     if (keyState.left) {
-      vectorAdd(vec, keyVectors.left);
+      vec = V.sum(vec, keyVectors.left);
     }
     if (keyState.right) {
-      vectorAdd(vec, keyVectors.right);
+      vec = V.sum(vec, keyVectors.right);
     }
-    return vec;
+    return V.norm(vec);
   }
 
   initKeyboardEvents(keyState,
