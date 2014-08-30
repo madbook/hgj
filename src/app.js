@@ -66,11 +66,12 @@ function initEngine(entities, can) {
 
 function Man(x, y) {
   this.position = {x:x, y:y};
-  this.direction = {x:0, y:0};
+  this.direction = {x:0, y:1};
   this.isMoving = false;
   this.speed = 0;
   this._speed = 0;
   this.momentum = {x:0, y:0};
+  this._direction = {x:0, y:1};
 }
 
 Man.prototype.height = 30;
@@ -90,15 +91,19 @@ Man.prototype.draw = function(can) {
 }
 
 Man.prototype.applyMovement = function(vec) {
-  V.set(this.direction, vec);
   this.isMoving = (vec.x !== 0 || vec.y !== 0);
   this._speed = (this.isMoving ? 5 : 0);
+  if (this.isMoving) {
+    V.set(this._direction, vec);
+  }
 }
 
 Man.prototype.tick = function() {
   var s = lerp(this.speed, this._speed, 0.3);
   this.speed = s;
-  this.momentum = V.sprod(this.direction, s);
+  var dir = vlerp(this.direction, this._direction, 0.3);
+  V.set(this.direction, dir);
+  this.momentum = V.sprod(dir, s);
   V.set(this.position, V.sum(this.position, this.momentum));
 }
 
@@ -137,6 +142,10 @@ function lerp(curr, goal, f) {
   return goal > curr 
       ? min(goal, curr + f * (goal - curr))
       : max(goal, curr - f * (curr - goal));
+}
+
+function vlerp(curr, goal, f) {
+   return V.sum(V.sprod(goal, f), V.sprod(curr, (1 - f)));
 }
 
 
