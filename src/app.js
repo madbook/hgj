@@ -2,6 +2,7 @@
 var V = Vector;
 var max = Math.max;
 var min = Math.min;
+var random = Math.random;
 
 function main() {
   var app = document.getElementById('app');
@@ -52,7 +53,15 @@ function main() {
     function keyReleased(key) {
       man.applyMovement(getCompositeVector());
     });
-  initEngine([man], can);
+
+  var entities = [man];
+
+  var i = 10;
+  while (i--) {
+    entities.push(new Stranger(random() * 900, random() * 600))
+  }
+
+  initEngine(entities, can);
 }
 
 function initEngine(entities, can) {
@@ -108,6 +117,47 @@ Man.prototype.tick = function() {
 }
 
 
+function Stranger(x, y) {
+  Man.call(this, x, y);
+}
+
+Stranger.prototype = Object.create(Man.prototype);
+Stranger.prototype.constructor = Stranger;
+
+Stranger.prototype.draw = function(can) {
+  var x = this.position.x;
+  var y = this.position.y;
+
+  can.translate(x, y)
+     .fillStyle('#CCCCCC')
+     .fillCircle(0, 0, this.width / 2)
+     .translate(-x, -y);
+}
+
+Stranger.prototype.tick = function(entities) {
+  var vec = this.getForces(entities)
+  this.applyMovement(vec);
+  Man.prototype.tick.call(this, entities);
+}
+
+Stranger.prototype.getForces = function(entities) {
+  var i = entities.length;
+  var vec = {x: 0, y:0};
+  var d, e;
+  while (i--) {
+    e = entities[i];
+    if (e === this) {
+      continue;
+    }
+    d = V.dist(this.position, e.position);
+    if (d > this.width * 1.5) {
+      continue;
+    }
+    V.set(vec, V.sum(vec, V.normFrom(e.position, this.position)));
+  }
+  return V.norm(vec);
+}
+
 function getCan(app) {
   // creates a canvas element in the dom, returns it wrapped in cannedvas
   var can = CannedVas.create();
@@ -125,7 +175,7 @@ function getCan(app) {
 function tick(entities) {
   var i = entities.length;
   while (i--) {
-    entities[i].tick();
+    entities[i].tick(entities);
   }
 }
 

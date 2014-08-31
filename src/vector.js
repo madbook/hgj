@@ -153,6 +153,7 @@ Vector = (function() {
     prod: prod,
     qtnt: qtnt,
     norm: norm,
+    normFrom: normFrom,
     cross: cross,
     neg: neg,
     dist: dist,
