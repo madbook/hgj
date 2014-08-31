@@ -121,6 +121,9 @@ Man.prototype.draw = function(can, t) {
 
 Man.prototype.drawShadow = function(can, t) {
   var shadow = this.getShadowLength(t);
+  if (shadow === null) {
+    return;
+  }
   var sSize = 0.75 * this.size + (this.size * 0.75 * (1 - abs(shadow)));
   var sLength = shadow * 100;
   var sAlpha = (1 - abs(shadow)) * 0.3;
@@ -161,7 +164,7 @@ Man.prototype.drawEmote = function(can) {
 Man.prototype.getShadowLength = function(t) {
   t -= 12;
   if (t > 7 || t < -7) {
-    return 0;
+    return null;
   }
   t /= 7;
   return t
