@@ -66,22 +66,24 @@ function main() {
     });
 
   window.man = man;
-
-  var entities = [man];
+  
+  var ctl = new Controller();
+  ctl.addEntity(man);
 
   var i = 10;
   while (i--) {
-    entities.push(new Stranger(random() * 900, random() * 600))
+    ctl.addEntity(new Stranger(random() * 900, random() * 600))
   }
 
-  initEngine(entities, can);
+  initEngine(ctl, can);
 }
 
-function initEngine(entities, can) {
+function initEngine(ctl, can) {
+  
   function main() {
     requestAnimationFrame(main);
-    tick(entities);
-    draw(entities, can, Date.now())
+    ctl.tick();
+    ctl.draw(can);
   }
   main();
 }
@@ -239,6 +241,35 @@ Stranger.prototype.getForces = function(entities) {
   return V.norm(vec);
 }
 
+
+function Controller() {
+  this.entities = [];
+  this.time = 0;
+}
+
+Controller.prototype.tick = function() {
+  this.time = (Date.now() / 10000) % 24;
+  var i = this.entities.length;
+  while (i--) {
+    this.entities[i].tick(this.entities, this.time);
+  }
+}
+
+Controller.prototype.draw = function(can) {
+  var i = this.entities.length;
+  can.fillStyle(getFillColor(this.time))
+     .fillCanvas();
+  drawTime(can, this.time);
+  while (i--) {
+    this.entities[i].draw(can, this.time);
+  }
+}
+
+Controller.prototype.addEntity = function(ent) {
+  this.entities.push(ent);
+}
+
+
 function getCan(app) {
   // creates a canvas element in the dom, returns it wrapped in cannedvas
   var can = CannedVas.create();
@@ -258,6 +289,7 @@ function tick(entities) {
   while (i--) {
     entities[i].tick(entities);
   }
+  return entities
 }
 
 function draw(entities, can, t) {
