@@ -11,8 +11,8 @@ var colors = {
   pomegranate: [192, 57, 43],
   carrot: [230, 126, 34],
   concrete: [149, 165, 166],
-  white: [255, 255, 255],
-  black: [0, 0, 0],
+  white: [255, 253, 251],
+  midnight: [22, 31, 40],
 }
 
 function main() {
@@ -256,14 +256,70 @@ Stranger.prototype.getForces = function(entities) {
 function Controller() {
   this.entities = [];
   this.time = 0;
+  this.spawnCooldown = 60;
 }
 
 Controller.prototype.tick = function() {
   this.time = (Date.now() / 10000) % 24;
+  if (this.spawnCooldown) {
+    this.spawnCooldown--;
+  }
+  else {
+    this.spawnStranger();
+    this.spawnCooldown = this.getSpawnCooldown(this.time);
+  }
   this.entities = this.getEntitiesInBounds(this.entities);
   var i = this.entities.length;
   while (i--) {
     this.entities[i].tick(this.entities, this.time);
+  }
+}
+
+Controller.prototype.getSpawnCooldown = function(t) {
+  var r = random();
+  if (t >= 3 && t < 5) {
+    // 3am to 5am, dead
+    return r * 120 | 0;
+  }
+  if (t >= 5 && t < 7) {
+    // early risers, joggers
+    return r * 80 | 0;
+  }
+  if (t >= 7 && t < 9) {
+    // morning commute hours
+    return r * 20 | 0;
+  }
+  if (t >= 9 && t < 12) {
+    // morning at work
+    return r * 60 | 0;
+  }
+  if (t >= 12 && t < 14) {
+    // lunchtime
+    return r * 40 | 0;
+  }
+  if (t >= 14 && t < 17) {
+    // afternoon, work hours
+    return r * 50 | 0;
+  }
+  if (t >= 17 && t < 19) {
+    // evening commute hours
+    return r * 15 | 0;
+  }
+  if (t >= 19 && t < 21) {
+    // evening dinner hours
+    return r * 20 | 0;
+  }
+  if (t >= 21 && t < 23) {
+    // evening commute hours
+    return r * 40 | 0;
+  }
+  if (t >= 23 || t < 1) {
+    // night bar hours
+    return r * 30 | 0;
+  }
+  if (t >= 1 && t < 3) {
+    // night commute hours
+    return r * 60 | 0;
   }
 }
 
@@ -387,7 +443,7 @@ function getFillColor(t) {
   }
   else if (t < 5 || t > 19) {
     a = 'midnightBlue'
-    b = 'black'
+    b = 'midnight'
     if (t < 5) {
       f = t / 5
       return formatRGB(clerp(colors[b], colors[a], f));
