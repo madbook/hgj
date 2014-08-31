@@ -3,6 +3,7 @@ var V = Vector;
 var max = Math.max;
 var min = Math.min;
 var random = Math.random;
+var abs = Math.abs;
 
 function main() {
   var app = document.getElementById('app');
@@ -68,7 +69,7 @@ function initEngine(entities, can) {
   function main() {
     requestAnimationFrame(main);
     tick(entities);
-    draw(entities, can)
+    draw(entities, can, Date.now())
   }
   main();
 }
@@ -83,20 +84,44 @@ function Man(x, y) {
   this._direction = {x:0, y:1};
 }
 
-Man.prototype.height = 30;
-Man.prototype.width = 30;
+Man.prototype.size = 30;
 
-Man.prototype.draw = function(can) {
-  var x = this.position.x// + this.width / 2;
-  var y = this.position.y// + (this.height * 2 / 3);
+Man.prototype.draw = function(can, t) {
+  var x = this.position.x;
+  var y = this.position.y;
   var a = V.angle(this.direction);
-
+  var shadow = this.getShadowLength(t);
+  var sLength = shadow * 100;
+  var sAlpha = (1 - abs(shadow)) * 0.3;
   can.translate(x, y)
-     .rotate(a)
+     .fillStyle('#000000')
+     .alpha(sAlpha)
+     .fillRect(0, -this.size/2, sLength, this.size)
+     .alpha(1)
      .fillStyle('#222222')
-     .fillBox(0, 0, this.width, this.height)
+     .rotate(a)
+     .fillBox(0, 0, this.size, this.size)
      .rotate(-a)
      .translate(-x, -y);
+}
+
+Man.prototype.getShadowLength = function(t) {
+  // 10 seconds = 1 hour
+  // 2 minutes = 12 hours
+  // 4 minutes = 1 day
+  // 0 == 6 am longest shadow right = 1
+  // 60000 = noon no shadow = 0
+  // 120000 = 6 pm longest shadow left = -1
+  // > 120000 = 6pm to 6am, no shadow
+  t /= 10000
+  t %= 24;
+  if (t > 12) {
+    return 0;
+  }
+  // console.log(t);
+  t -= 6;
+  t /= 6;
+  return t
 }
 
 Man.prototype.applyMovement = function(vec) {
@@ -108,7 +133,7 @@ Man.prototype.applyMovement = function(vec) {
 }
 
 Man.prototype.tick = function() {
-  var s = lerp(this.speed, this._speed, 0.3);
+  var s = lerp(this.speed, this._speed, 0.25);
   this.speed = s;
   var dir = vlerp(this.direction, this._direction, 0.3);
   V.set(this.direction, dir);
@@ -119,22 +144,33 @@ Man.prototype.tick = function() {
 
 function Stranger(x, y) {
   Man.call(this, x, y);
+  this.moveTo = {x: random() * 900, y: random() * 450}
+  this.size = (random() * 15 | 0) + 25
 }
 
 Stranger.prototype = Object.create(Man.prototype);
 Stranger.prototype.constructor = Stranger;
 
-Stranger.prototype.draw = function(can) {
+Stranger.prototype.draw = function(can, t) {
   var x = this.position.x;
   var y = this.position.y;
-
+  var shadow = this.getShadowLength(t);
+  var sLength = shadow * 100;
+  var sAlpha = (1 - abs(shadow)) * 0.3;
   can.translate(x, y)
-     .fillStyle('#CCCCCC')
-     .fillCircle(0, 0, this.width / 2)
+     .fillStyle('#000000')
+     .alpha(sAlpha)
+     .fillRect(0, -this.size/2, sLength, this.size)
+     .alpha(1)
+     .fillStyle('#999999')
+     .fillCircle(0, 0, this.size / 2)
      .translate(-x, -y);
 }
 
 Stranger.prototype.tick = function(entities) {
+  // if (abs(V.dist(this.moveTo, this.position)) < 1) {
+  //   this.moveTo = this.position;
+  // }
   var vec = this.getForces(entities)
   this.applyMovement(vec);
   Man.prototype.tick.call(this, entities);
@@ -142,15 +178,18 @@ Stranger.prototype.tick = function(entities) {
 
 Stranger.prototype.getForces = function(entities) {
   var i = entities.length;
-  var vec = {x: 0, y:0};
-  var d, e;
+  var d = abs(V.dist(this.position, this.moveTo));
+
+  var vec = (d < 5) ? {x:0, y:0} : V.normFrom(this.position, this.moveTo);
+  
+  var e;
   while (i--) {
     e = entities[i];
     if (e === this) {
       continue;
     }
-    d = V.dist(this.position, e.position);
-    if (d > this.width * 1.5) {
+    d = abs(V.dist(this.position, e.position));
+    if (d > this.size * 1.5) {
       continue;
     }
     V.set(vec, V.sum(vec, V.normFrom(e.position, this.position)));
@@ -179,11 +218,11 @@ function tick(entities) {
   }
 }
 
-function draw(entities, can) {
+function draw(entities, can, t) {
   var i = entities.length;
   can.clearCanvas();
   while (i--) {
-    entities[i].draw(can);
+    entities[i].draw(can, t);
   }
 }
 
