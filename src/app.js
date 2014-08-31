@@ -65,6 +65,8 @@ function main() {
       man.applyMovement(getCompositeVector());
     });
 
+  window.man = man;
+
   var entities = [man];
 
   var i = 10;
@@ -92,6 +94,8 @@ function Man(x, y) {
   this._speed = 0;
   this.momentum = {x:0, y:0};
   this._direction = {x:0, y:1};
+  this.emoteCooldown = 0;
+  this.emoteText = '';
 }
 
 Man.prototype.size = 30;
@@ -113,6 +117,29 @@ Man.prototype.draw = function(can, t) {
      .paintBox(0, 0, this.size, this.size)
      .rotate(-a)
      .translate(-x, -y);
+  this.drawEmote(can);
+}
+
+Man.prototype.drawEmote = function(can) {
+  if (!this.emoteCooldown) {
+    return; 
+  }
+  var w = can.textWidth(this.emoteText);
+  var p = 10;
+  var p2 = 5;
+  var x = this.position.x;
+  var y = this.position.y;
+  var w2 = -w / 2;
+  var h2 = -30 + p2;
+  can.translate(x, y)
+     .paintStyle('#DDDDDD', '#AAAAAA', 1)
+     .paintRect(w2-p, -60-p2, w+(2*p), 30+(2*p2))
+     .beginPath().moveTo(w2, h2).lineTo(0, -10).lineTo(w2+10, h2).fill()
+     .fillStyle('#222222')
+     .font('20px/30px monospace')
+     .textBaseline('top')
+     .fillText(this.emoteText, (-w/2), -60)
+     .translate(-x, -y);
 }
 
 Man.prototype.getShadowLength = function(t) {
@@ -133,12 +160,23 @@ Man.prototype.applyMovement = function(vec) {
 }
 
 Man.prototype.tick = function() {
+  if (this.emoteCooldown > 0) {
+    this.emoteCooldown--;
+  }
   var s = lerp(this.speed, this._speed, 0.25);
   this.speed = s;
   var dir = vlerp(this.direction, this._direction, 0.3);
   V.set(this.direction, dir);
   this.momentum = V.sprod(dir, s);
   V.set(this.position, V.sum(this.position, this.momentum));
+}
+
+Man.prototype.emote = function(txt) {
+  if (this.emoteCooldown) {
+    return;
+  }
+  this.emoteText = txt || '...';
+  this.emoteCooldown = 60;
 }
 
 
@@ -165,6 +203,7 @@ Stranger.prototype.draw = function(can, t) {
      .paintStyle('#666666', '#DDDDDD', 1)
      .paintCircle(0, 0, this.size / 2)
      .translate(-x, -y);
+  this.drawEmote(can);
 }
 
 Stranger.prototype.tick = function(entities) {
@@ -191,6 +230,9 @@ Stranger.prototype.getForces = function(entities) {
     d = abs(V.dist(this.position, e.position));
     if (d > this.size * 1.5) {
       continue;
+    }
+    if (!this.emoteCooldown) {
+      this.emote('!');
     }
     V.set(vec, V.sum(vec, V.normFrom(e.position, this.position)));
   }
