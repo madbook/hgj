@@ -18,7 +18,7 @@ var colors = {
 function main() {
   var app = document.getElementById('app');
   var can = getCan(app);
-  var man = new Man(50, 50);
+  var man = new Man(450, 300);
 
   var keyVectors = {
     'none': {x:0, y:0},
@@ -423,8 +423,9 @@ function drawTime(can, t) {
     m = '0'+m;
   }
   can.font('20px/30px monospace')
+     .textBaseline('top')
      .fillStyle(c)
-     .fillText(h + ':' + m + ' ' + x, 20, 40);
+     .fillText(h + ':' + m + ' ' + x, 20, 20);
 }
 
 function getFillColor(t) {
