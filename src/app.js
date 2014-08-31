@@ -65,16 +65,12 @@ function main() {
       man.applyMovement(getCompositeVector());
     });
 
-  window.man = man;
   
   var ctl = new Controller();
   ctl.addEntity(man);
-
-  var i = 10;
-  while (i--) {
-    ctl.addEntity(new Stranger(random() * 900, random() * 600))
-  }
-
+  
+  window.man = man;
+  window.ctl = ctl;
   initEngine(ctl, can);
 }
 
@@ -106,20 +102,38 @@ Man.prototype.draw = function(can, t) {
   var x = this.position.x;
   var y = this.position.y;
   var a = V.angle(this.direction);
-  var shadow = this.getShadowLength(t);
-  var sLength = shadow * 100;
-  var sAlpha = (1 - abs(shadow)) * 0.3;
+
+  this.drawShadow(can, t);
   can.translate(x, y)
-     .fillStyle('#000000')
-     .alpha(sAlpha)
-     .fillRect(0, -this.size/2, sLength, this.size)
-     .alpha(1)
+     
+     // .fillStyle('#000000')
+     // .alpha(sAlpha)
+     // .fillRect(0, -this.size/2, sLength, this.size)
+     // .alpha(1)
+     
      .paintStyle('#222222', '#DDDDDD', 1)
      .rotate(a)
      .paintBox(0, 0, this.size, this.size)
      .rotate(-a)
      .translate(-x, -y);
   this.drawEmote(can);
+}
+
+Man.prototype.drawShadow = function(can, t) {
+  var shadow = this.getShadowLength(t);
+  var sSize = 0.75 * this.size + (this.size * 0.75 * (1 - abs(shadow)));
+  var sLength = shadow * 100;
+  var sAlpha = (1 - abs(shadow)) * 0.3;
+  var x = this.position.x;
+  var y = this.position.y;
+  var a = V.angle(this.direction);
+  var xo = 
+  can.translate(x, y)
+     .fillStyle('#000000')
+     .alpha(sAlpha)
+     .fillEllipse(sLength/2, 0, abs(sLength) + sSize, sSize)
+     .alpha(1)
+     .translate(-x, -y);
 }
 
 Man.prototype.drawEmote = function(can) {
@@ -182,9 +196,9 @@ Man.prototype.emote = function(txt) {
 }
 
 
-function Stranger(x, y) {
+function Stranger(x, y, x2, y2) {
   Man.call(this, x, y);
-  this.moveTo = {x: random() * 900, y: random() * 450}
+  this.moveTo = {x: x2, y: y2}
   this.size = (random() * 15 | 0) + 25
 }
 
@@ -194,14 +208,8 @@ Stranger.prototype.constructor = Stranger;
 Stranger.prototype.draw = function(can, t) {
   var x = this.position.x;
   var y = this.position.y;
-  var shadow = this.getShadowLength(t);
-  var sLength = shadow * 100;
-  var sAlpha = (1 - abs(shadow)) * 0.3;
+  this.drawShadow(can, t);
   can.translate(x, y)
-     .fillStyle('#000000')
-     .alpha(sAlpha)
-     .fillRect(0, -this.size/2, sLength, this.size)
-     .alpha(1)
      .paintStyle('#666666', '#DDDDDD', 1)
      .paintCircle(0, 0, this.size / 2)
      .translate(-x, -y);
@@ -249,10 +257,25 @@ function Controller() {
 
 Controller.prototype.tick = function() {
   this.time = (Date.now() / 10000) % 24;
+  this.entities = this.getEntitiesInBounds(this.entities);
   var i = this.entities.length;
   while (i--) {
     this.entities[i].tick(this.entities, this.time);
   }
+}
+
+Controller.prototype.getEntitiesInBounds = function(entities) {
+  var res = [];
+  var i = entities.length;
+  var e, p;
+  while (i--) {
+    e = entities[i];
+    p = e.position;
+    if (p.x > -50 && p.x < 950 && p.y > -50 && p.y < 650) {
+      res.push(e);
+    }
+  }
+  return res;
 }
 
 Controller.prototype.draw = function(can) {
@@ -269,6 +292,13 @@ Controller.prototype.addEntity = function(ent) {
   this.entities.push(ent);
 }
 
+Controller.prototype.spawnStranger = function() {
+  var r = random();
+  var x = r < 0.5 ? -30 : 930;
+  var y = random() * 350 + 150;
+  var x2 = x < 0 ? 1000 : -100;
+  this.addEntity(new Stranger(x, y, x2, y));
+}
 
 function getCan(app) {
   // creates a canvas element in the dom, returns it wrapped in cannedvas
