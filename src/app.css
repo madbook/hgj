@@ -1,4 +1,5 @@
 html {
+  font-family: 'helvetica neue', helvetica, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,4 +10,33 @@ html {
 canvas {
   background-color: #fefefe;
   border: 1px solid #dedede;
+}
+
+header,
+footer {
+  text-align: center;
+}
+
+h1 {
+  font-weight: 100;
+  margin: 0;
+  color: darkgrey;
+}
+
+p {
+  font-weight: 200;
+  margin: 0 0 10px;
+  color: darkgrey;
+}
+
+a {
+  color: lightblue;
+  display: inline-block;
+  padding: 4px;
+  font-weight: 200;
+  font-size: 18px;
+}
+
+a:hover {
+  color: blue;
 }
