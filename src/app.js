@@ -5,6 +5,14 @@ var min = Math.min;
 var random = Math.random;
 var abs = Math.abs;
 
+var colors = {
+  midnightBlue: [44, 62, 80],
+  wisteria: [142, 68, 173],
+  pomegranate: [192, 57, 43],
+  carrot: [230, 126, 34],
+  concrete: [149, 165, 166],
+}
+
 function main() {
   var app = document.getElementById('app');
   var can = getCan(app);
@@ -98,29 +106,19 @@ Man.prototype.draw = function(can, t) {
      .alpha(sAlpha)
      .fillRect(0, -this.size/2, sLength, this.size)
      .alpha(1)
-     .fillStyle('#222222')
+     .paintStyle('#222222', '#DDDDDD', 1)
      .rotate(a)
-     .fillBox(0, 0, this.size, this.size)
+     .paintBox(0, 0, this.size, this.size)
      .rotate(-a)
      .translate(-x, -y);
 }
 
 Man.prototype.getShadowLength = function(t) {
-  // 10 seconds = 1 hour
-  // 2 minutes = 12 hours
-  // 4 minutes = 1 day
-  // 0 == 6 am longest shadow right = 1
-  // 60000 = noon no shadow = 0
-  // 120000 = 6 pm longest shadow left = -1
-  // > 120000 = 6pm to 6am, no shadow
-  t /= 10000
-  t %= 24;
-  if (t > 12) {
+  t -= 12;
+  if (t > 7 || t < -7) {
     return 0;
   }
-  // console.log(t);
-  t -= 6;
-  t /= 6;
+  t /= 7;
   return t
 }
 
@@ -162,8 +160,8 @@ Stranger.prototype.draw = function(can, t) {
      .alpha(sAlpha)
      .fillRect(0, -this.size/2, sLength, this.size)
      .alpha(1)
-     .fillStyle('#999999')
-     .fillCircle(0, 0, this.size / 2)
+     .paintStyle('#666666', '#DDDDDD', 1)
+     .paintCircle(0, 0, this.size / 2)
      .translate(-x, -y);
 }
 
@@ -219,11 +217,76 @@ function tick(entities) {
 }
 
 function draw(entities, can, t) {
+  // 10 seconds = 1 hour
+  // 2 minutes = 12 hours
+  // 4 minutes = 1 day
+  t /= 10000
+  t %= 24;
   var i = entities.length;
-  can.clearCanvas();
+  can.fillStyle(getFillColor(t))
+     .fillCanvas();
   while (i--) {
     entities[i].draw(can, t);
   }
+}
+
+var colorNexts = {
+  'concrete': 'carrot',
+  'carrot': 'pomegranate',
+  'pomegranate': 'wisteria',
+  'wisteria': 'midnightBlue',
+}
+
+function getFillColor(t) {
+  if (t > 7 && t < 17) {
+    return formatRGB(colors.concrete);
+  }
+  else if (t < 5 || t > 19) {
+    return formatRGB(colors.midnightBlue);
+  }
+
+  var r, a, b, f;
+  if (t >= 17) {
+    f = 2 - (19 - t);
+  }
+  else {
+    f = 7 - t;
+  }
+
+  if (f < 0.5) {
+    a = 'concrete';
+  }
+  else if (f < 1) {
+    a = 'carrot';
+    f -= 0.5;
+  }
+  else if (f < 1.5) {
+    a = 'pomegranate';
+    f -= 1;
+  }
+  else {
+    a = 'wisteria';
+    f -= 1.5;
+  }
+  f /= 0.5;
+  b = colorNexts[a];
+  var res = formatRGB(clerp(colors[a], colors[b], f));
+  return res
+  // 5pm      
+  // concrete -> carrot -> pomegranate -> wisteria -> midnightBlue
+  // 7am
+}
+
+function formatRGB(color) {
+  return 'rgb('+(color[0]|0)+','+(color[1]|0)+','+(color[2]|0)+')';
+}
+
+function clerp(colora, colorb, f) {
+  return [
+    lerp(colora[0], colorb[0], f),
+    lerp(colora[1], colorb[1], f),
+    lerp(colora[2], colorb[2], f),
+  ];
 }
 
 function lerp(curr, goal, f) {
