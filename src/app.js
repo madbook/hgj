@@ -11,6 +11,8 @@ var colors = {
   pomegranate: [192, 57, 43],
   carrot: [230, 126, 34],
   concrete: [149, 165, 166],
+  white: [255, 255, 255],
+  black: [0, 0, 0],
 }
 
 function main() {
@@ -225,6 +227,7 @@ function draw(entities, can, t) {
   var i = entities.length;
   can.fillStyle(getFillColor(t))
      .fillCanvas();
+  drawTime(can, t);
   while (i--) {
     entities[i].draw(can, t);
   }
@@ -237,41 +240,83 @@ var colorNexts = {
   'wisteria': 'midnightBlue',
 }
 
+function drawTime(can, t) {
+  var c = t > 6 && t < 18 ? '#000000' : '#FFFFFF';
+  var h = t|0;
+  var x = h >= 12 ? 'PM' : 'AM';
+  var m = (t - h) * 60 | 0;
+  h %= 12;
+  if (!h) {
+    h = '12';
+  }
+  else {
+    h += '';
+  }
+  if (h.length === 1) {
+    h = '0'+h;
+  }
+  m += '';
+  if (m.length === 1) {
+    m = '0'+m;
+  }
+  can.font('20px/30px monospace')
+     .fillStyle(c)
+     .fillText(h + ':' + m + ' ' + x, 20, 40);
+}
+
 function getFillColor(t) {
+  var r, a, b, f;
   if (t > 7 && t < 17) {
-    return formatRGB(colors.concrete);
+    a = 'concrete'
+    b = 'white'
+    if (t > 12) {
+      f = (t - 12) / 5
+      return formatRGB(clerp(colors[b], colors[a], f));
+    }
+    else {
+      f = (t - 7) / 5
+      return formatRGB(clerp(colors[a], colors[b], f));
+    }
   }
   else if (t < 5 || t > 19) {
-    return formatRGB(colors.midnightBlue);
-  }
-
-  var r, a, b, f;
-  if (t >= 17) {
-    f = 2 - (19 - t);
-  }
-  else {
-    f = 7 - t;
-  }
-
-  if (f < 0.5) {
-    a = 'concrete';
-  }
-  else if (f < 1) {
-    a = 'carrot';
-    f -= 0.5;
-  }
-  else if (f < 1.5) {
-    a = 'pomegranate';
-    f -= 1;
+    a = 'midnightBlue'
+    b = 'black'
+    if (t < 5) {
+      f = t / 5
+      return formatRGB(clerp(colors[b], colors[a], f));
+    }
+    else {
+      f = (t - 19) / 5
+      return formatRGB(clerp(colors[a], colors[b], f));
+    }
   }
   else {
-    a = 'wisteria';
-    f -= 1.5;
+    if (t >= 17) {
+      f = 2 - (19 - t);
+    }
+    else {
+      f = 7 - t;
+    }
+
+    if (f < 0.5) {
+      a = 'concrete';
+    }
+    else if (f < 1) {
+      a = 'carrot';
+      f -= 0.5;
+    }
+    else if (f < 1.5) {
+      a = 'pomegranate';
+      f -= 1;
+    }
+    else {
+      a = 'wisteria';
+      f -= 1.5;
+    }
+    f /= 0.5;
+    b = colorNexts[a];
+    return formatRGB(clerp(colors[a], colors[b], f));
   }
-  f /= 0.5;
-  b = colorNexts[a];
-  var res = formatRGB(clerp(colors[a], colors[b], f));
-  return res
   // 5pm      
   // concrete -> carrot -> pomegranate -> wisteria -> midnightBlue
   // 7am
