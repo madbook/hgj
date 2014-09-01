@@ -4,6 +4,16 @@ var max = Math.max;
 var min = Math.min;
 var random = Math.random;
 var abs = Math.abs;
+var sin = Math.sin;
+
+CannedVas.prototype.translateToVector = function(a) {
+  return this.translate(a.x, a.y);
+}
+
+CannedVas.prototype.translateFromVector = function(a) {
+  return this.translate(-a.x, -a.y);
+}
+
 
 var colors = {
   midnightBlue: [44, 62, 80],
@@ -68,7 +78,6 @@ function main() {
   
   var ctl = new Controller();
   ctl.addEntity(man);
-  
   window.man = man;
   window.ctl = ctl;
   initEngine(ctl, can);
@@ -92,8 +101,10 @@ function Man(x, y) {
   this._speed = 0;
   this.momentum = {x:0, y:0};
   this._direction = {x:0, y:1};
-  this.emoteCooldown = 0;
-  this.emoteText = '';
+  this.emoteParticle = null;
+  this.alive = true;
+  var r = random();
+  this.Emotion = r < 0.33 ? EmoteYes : r < 0.66 ? EmoteNo : EmoteAngry;
 }
 
 Man.prototype.size = 30;
@@ -116,7 +127,7 @@ Man.prototype.draw = function(can, t) {
      .paintBox(0, 0, this.size, this.size)
      .rotate(-a)
      .translate(-x, -y);
-  this.drawEmote(can);
+  this.drawEmote(can, t);
 }
 
 Man.prototype.drawShadow = function(can, t) {
@@ -139,26 +150,20 @@ Man.prototype.drawShadow = function(can, t) {
      .translate(-x, -y);
 }
 
-Man.prototype.drawEmote = function(can) {
-  if (!this.emoteCooldown) {
+Man.prototype.drawEmote = function(can, t) {
+  if (!this.emoteParticle) {
     return; 
   }
-  var w = can.textWidth(this.emoteText);
-  var p = 10;
-  var p2 = 5;
+  var w = 40;
   var x = this.position.x;
-  var y = this.position.y;
-  var w2 = -w / 2;
-  var h2 = -30 + p2;
+  var y = this.position.y - 40;
   can.translate(x, y)
      .paintStyle('#DDDDDD', '#AAAAAA', 1)
-     .paintRect(w2-p, -60-p2, w+(2*p), 30+(2*p2))
-     .beginPath().moveTo(w2, h2).lineTo(0, -10).lineTo(w2+10, h2).fill()
-     .fillStyle('#222222')
-     .font('20px/30px monospace')
-     .textBaseline('top')
-     .fillText(this.emoteText, (-w/2), -60)
-     .translate(-x, -y);
+     .paintBox(0, 0, w, w)
+     .beginPath().moveTo(-10, 20).lineTo(0, 30).lineTo(10, 20).fill()
+
+  this.emoteParticle.draw(can, t);
+  can.translate(-x, -y);
 }
 
 Man.prototype.getShadowLength = function(t) {
@@ -179,8 +184,11 @@ Man.prototype.applyMovement = function(vec) {
 }
 
 Man.prototype.tick = function() {
-  if (this.emoteCooldown > 0) {
-    this.emoteCooldown--;
+  if (this.emoteParticle) {
+    this.emoteParticle.tick();
+    if (!this.emoteParticle.alive) {
+      this.emoteParticle = null;
+    }
   }
   var s = lerp(this.speed, this._speed, 0.25);
   this.speed = s;
@@ -191,11 +199,10 @@ Man.prototype.tick = function() {
 }
 
 Man.prototype.emote = function(txt) {
-  if (this.emoteCooldown) {
+  if (this.emoteParticle) {
     return;
   }
-  this.emoteText = txt || '...';
-  this.emoteCooldown = 60;
+  this.emoteParticle = new this.Emotion(0, 0, 60);
 }
 
 
@@ -216,7 +223,7 @@ Stranger.prototype.draw = function(can, t) {
      .paintStyle('#666666', '#DDDDDD', 1)
      .paintCircle(0, 0, this.size / 2)
      .translate(-x, -y);
-  this.drawEmote(can);
+  this.drawEmote(can, t);
 }
 
 Stranger.prototype.tick = function(entities) {
@@ -226,6 +233,10 @@ Stranger.prototype.tick = function(entities) {
   var vec = this.getForces(entities)
   this.applyMovement(vec);
   Man.prototype.tick.call(this, entities);
+  var p = this.position;
+  if (!(p.x > -50 && p.x < 950 && p.y > -50 && p.y < 650)) {
+    this.alive = false;
+  }
 }
 
 Stranger.prototype.getForces = function(entities) {
@@ -244,8 +255,8 @@ Stranger.prototype.getForces = function(entities) {
     if (d > this.size * 1.5) {
       continue;
     }
-    if (!this.emoteCooldown) {
-      this.emote('!');
+    if (!this.emoteParticle) {
+      this.emote();
     }
     V.set(vec, V.sum(vec, V.normFrom(e.position, this.position)));
   }
@@ -268,7 +279,7 @@ Controller.prototype.tick = function() {
     this.spawnStranger();
     this.spawnCooldown = this.getSpawnCooldown(this.time);
   }
-  this.entities = this.getEntitiesInBounds(this.entities);
+  this.entities = this.getLiveEntities(this.entities);
   var i = this.entities.length;
   while (i--) {
     this.entities[i].tick(this.entities, this.time);
@@ -323,14 +334,14 @@ Controller.prototype.getSpawnCooldown = function(t) {
   }
 }
 
-Controller.prototype.getEntitiesInBounds = function(entities) {
+Controller.prototype.getLiveEntities = function(entities) {
   var res = [];
   var i = entities.length;
   var e, p;
   while (i--) {
     e = entities[i];
     p = e.position;
-    if (p.x > -50 && p.x < 950 && p.y > -50 && p.y < 650) {
+    if (e.alive) {
       res.push(e);
     }
   }
@@ -359,6 +370,75 @@ Controller.prototype.spawnStranger = function() {
   this.addEntity(new Stranger(x, y, x2, y));
 }
 
+
+function Particle(x, y, life) {
+  this.position = {x:x, y:y};
+  this.life = life | 0;
+  this.alive = !!this.life
+}
+
+Particle.prototype.tick = function(entities, t) {
+  if (this.life >= 0) {
+    this.life -= 1;
+  }
+  else {
+    this.alive = false;
+  }
+}
+
+Particle.prototype.draw = function(can, t) {
+}
+
+
+function EmoteNo(x, y, life) {
+  Particle.call(this, x, y, life);
+}  
+
+EmoteNo.prototype = Object.create(Particle.prototype);
+EmoteNo.prototype.constructor = EmoteNo;
+
+EmoteNo.prototype.draw = function(can, t) {
+  can.paintStyle('#0000FF', '#000000', 1)
+     .translateToVector(this.position)
+     .paintBox(sineWave(5, 0.1, this.life, 0), sineWave(2, 0.2, this.life, 1), 20, 20)
+     .translateFromVector(this.position);
+}
+
+
+function EmoteYes(x, y, life) {
+  Particle.call(this, x, y, life);
+}  
+
+EmoteYes.prototype = Object.create(Particle.prototype);
+EmoteYes.prototype.constructor = EmoteYes;
+
+EmoteYes.prototype.draw = function(can, t) {
+  can.paintStyle('#00FF00', '#000000', 1)
+     .translateToVector(this.position)
+     .paintBox(0, sineWave(5, 0.4, this.life, 0), 20, 20)
+     .translateFromVector(this.position);
+}
+
+
+function EmoteAngry(x, y, life) {
+  Particle.call(this, x, y, life);
+}  
+
+EmoteAngry.prototype = Object.create(Particle.prototype);
+EmoteAngry.prototype.constructor = EmoteAngry;
+
+EmoteAngry.prototype.draw = function(can, t) {
+  can.paintStyle('#FF0000', '#000000', 1)
+     .translateToVector(this.position)
+     .paintBox(sineWave(3, 1.5, this.life, 0), 0, 20, 20)
+     .translateFromVector(this.position);
+}
+
+function sineWave(a, f, t, p) {
+  return a * sin(f * t + p);
+}
+
+
 function getCan(app) {
   // creates a canvas element in the dom, returns it wrapped in cannedvas
   var can = CannedVas.create();
@@ -370,30 +450,6 @@ function getCan(app) {
   can.style('height', '300px');
   app.appendChild(can.vas);
   return can;
-}
-
-
-function tick(entities) {
-  var i = entities.length;
-  while (i--) {
-    entities[i].tick(entities);
-  }
-  return entities
-}
-
-function draw(entities, can, t) {
-  // 10 seconds = 1 hour
-  // 2 minutes = 12 hours
-  // 4 minutes = 1 day
-  t /= 10000
-  t %= 24;
-  var i = entities.length;
-  can.fillStyle(getFillColor(t))
-     .fillCanvas();
-  drawTime(can, t);
-  while (i--) {
-    entities[i].draw(can, t);
-  }
 }
 
 var colorNexts = {
